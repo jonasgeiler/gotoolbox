@@ -58,7 +58,7 @@ func (t *Tool) downloadIfNeeded() (string, error) {
 	hostPlatform := HostPlatform(t.BuildType == BuildTypeDynamic)
 
 	binCacheDir := filepath.Join(
-		ToolCacheDir(),
+		ToolCacheDir(), // TODO: Use Go workspace/module root instead? Traverse upwards until a go.work file found, if not found try again but look for go.mod. This would also allow just deleting old cached versions maybe.
 		t.Name,
 		t.Version,
 		hostPlatform.OS,
