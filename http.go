@@ -2,10 +2,11 @@ package gotoolbox
 
 import (
 	"errors"
+	"io"
 	"net/http"
 )
 
-func Fetch(url string) (*http.Response, error) {
+func Download(url string) (io.ReadCloser, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -13,5 +14,5 @@ func Fetch(url string) (*http.Response, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.Status)
 	}
-	return resp, nil
+	return resp.Body, nil
 }

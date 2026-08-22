@@ -12,8 +12,8 @@ import (
 var muslRegex = regexp.MustCompile(`\bmusl\b`)
 var gnuLibcRegex = regexp.MustCompile(`\bGNU +libc\b`)
 
-// IsMuslLibc returns true if the system is using musl libc.
-var IsMuslLibc = sync.OnceValue(
+// IsHostPlatformEnvMusl returns true if the host platform is a musl libc environment.
+var IsHostPlatformEnvMusl = sync.OnceValue(
 	func() bool {
 		out, err := os.ReadFile("/proc/self/maps")
 		if err == nil {

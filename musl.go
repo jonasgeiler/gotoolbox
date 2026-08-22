@@ -2,7 +2,7 @@
 
 package gotoolbox
 
-// IsMuslLibc returns true if the system is using musl libc.
-func IsMuslLibc() bool {
+// IsHostPlatformEnvMusl returns true if the host platform is a musl libc environment.
+func IsHostPlatformEnvMusl() bool {
 	return false
 }

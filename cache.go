@@ -5,19 +5,20 @@ import (
 	"path/filepath"
 )
 
-func ToolCacheDir() string {
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		cacheDir = os.TempDir()
-	}
-	toolCacheDir := filepath.Join(cacheDir, "gotoolbox")
-	if err = os.MkdirAll(toolCacheDir, 0755); err != nil {
-		// Fall back to not using a subdir.
-		return cacheDir
-	}
-	return toolCacheDir
-}
+const toolCacheDirName = "gotoolbox"
+const toolCacheDirHiddenName = ".gotoolbox"
 
-func ResolveToolPath(binName string) string {
-	return filepath.Join(ToolCacheDir(), binName)
+func ToolCacheDir() string {
+	// Try to use user's cache dir (e.g. /home/username/.cache/gotoolbox).
+	if userCacheDir, err := os.UserCacheDir(); err == nil {
+		return filepath.Join(userCacheDir, toolCacheDirName)
+	}
+
+	// Otherwise try to use user's home dir (e.g. /home/username/.gotoolbox).
+	if userHomeDir, err := os.UserHomeDir(); err == nil {
+		return filepath.Join(userHomeDir, toolCacheDirHiddenName)
+	}
+
+	// Fall back to global temp dir (e.g. /tmp/gotoolbox).
+	return filepath.Join(os.TempDir(), toolCacheDirName)
 }

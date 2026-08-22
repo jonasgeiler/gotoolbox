@@ -1,190 +1,94 @@
 package main
 
 import (
-	"archive/zip"
-	"bufio"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"os"
-	"runtime"
-	"strings"
-
 	"github.com/jonasgeiler/gotoolbox"
 )
 
-const tool = "dprint"
-
-const (
-	// renovate: datasource=github-releases depName=dprint/dprint
-	version    = "0.54.0"
-	repository = "dprint/dprint"
-)
+var dprint = &gotoolbox.Tool{
+	Name:      "dprint",
+	Version:   "0.55.2",
+	BuildType: gotoolbox.BuildTypeDynamic,
+	Binaries: map[gotoolbox.Platform]gotoolbox.DownloadInfo{
+		{OS: "android", Arch: "amd64"}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-x86_64-linux-android.zip",
+			Checksum:    "986c5f1926d9a1ae5049ac87c03f0d4cd7fdb823840d47af4fc6080725f3db32",
+			ExtractFile: "dprint",
+		},
+		{OS: "android", Arch: "arm64"}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-aarch64-linux-android.zip",
+			Checksum:    "879a8de2c7e2b17dfd36fff855807803793fefdf8da9b1f69bc07c0a31f94ca3",
+			ExtractFile: "dprint",
+		},
+		{OS: "darwin", Arch: "amd64"}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-x86_64-apple-darwin.zip",
+			Checksum:    "b7074cf6c814f995b783b5baa7e516b34e783c42c9baf7af553dbad731adb3a7",
+			ExtractFile: "dprint",
+		},
+		{OS: "darwin", Arch: "arm64"}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-aarch64-apple-darwin.zip",
+			Checksum:    "e9ba8ed7988f3350501a8cf8af92da616cdec8d9d5c831c069293c587311b49d",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "amd64", Env: gotoolbox.PlatformEnvGNU}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-x86_64-unknown-linux-gnu.zip",
+			Checksum:    "d7ccde62d789dfb048717252d259e21253e32feffe4cbf2dab9954eeab492219",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "amd64", Env: gotoolbox.PlatformEnvMusl}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-x86_64-unknown-linux-musl.zip",
+			Checksum:    "45fc0eef3216af21c4c22c6e7e233aa45c3080fac07b6e94db7008a5c8e5c67a",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "arm64", Env: gotoolbox.PlatformEnvGNU}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-aarch64-unknown-linux-gnu.zip",
+			Checksum:    "299923f2b56d66756ad2c7c220650c72f26437fd3f48b3fb6c0df664073eb1d1",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "arm64", Env: gotoolbox.PlatformEnvMusl}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-aarch64-unknown-linux-musl.zip",
+			Checksum:    "f0101217dd0abc94f1ac01b83d306d0288aeee8a501e8614a5e2bbe037500be0",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "loong64", Env: gotoolbox.PlatformEnvGNU}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-loongarch64-unknown-linux-gnu.zip",
+			Checksum:    "9dccf17fd3d79885ece6b3442639cb62cc1ac3852d9a30467fb2f18b4c0997f4",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "loong64", Env: gotoolbox.PlatformEnvMusl}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-loongarch64-unknown-linux-musl.zip",
+			Checksum:    "11eb0a855e862bc27c002b863125e96fa794b8d149f919759639fd76d6f31032",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "ppc64le", Env: gotoolbox.PlatformEnvGNU}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-powerpc64le-unknown-linux-gnu.zip",
+			Checksum:    "bb7b367b0ad41b413d4b0828cf96d5344e0686e14ab3bb1705a0705b340dd3ec",
+			ExtractFile: "dprint",
+		},
+		{OS: "linux", Arch: "ppc64le", Env: gotoolbox.PlatformEnvMusl}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-powerpc64le-unknown-linux-musl.zip",
+			Checksum:    "7973e0203bd5ca23fa50b75c45c61284080500fa50ec45b7ba422bd0f1dad0ed",
+			ExtractFile: "dprint",
+		},
+		// No musl build is available for riscv64.
+		{OS: "linux", Arch: "riscv64", Env: gotoolbox.PlatformEnvGNU}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-riscv64gc-unknown-linux-gnu.zip",
+			Checksum:    "ed70faf3ecfbb67786470c62fd3eee44172451fa91166f660c7a52a9d9c36979",
+			ExtractFile: "dprint",
+		},
+		// Only MSVC builds are available for Windows.
+		{OS: "windows", Arch: "amd64", Env: gotoolbox.PlatformEnvMSVC}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-x86_64-pc-windows-msvc.zip",
+			Checksum:    "12e8c26abc8c436223e70f5a30a2864001c92fa356a859eb93e06b97ab7dbd12",
+			ExtractFile: "dprint.exe",
+		},
+		{OS: "windows", Arch: "arm64", Env: gotoolbox.PlatformEnvMSVC}: {
+			URL:         "https://github.com/dprint/dprint/releases/download/0.55.2/dprint-aarch64-pc-windows-msvc.zip",
+			Checksum:    "65846975b2a8f4e36982ddff875147157c2c9b04c6eb17134d6655ed51e3a931",
+			ExtractFile: "dprint.exe",
+		},
+	},
+}
 
 func main() {
-	binPath, err := downloadIfNeeded()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Download Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	gotoolbox.Exec(binPath)
-}
-
-func downloadIfNeeded() (string, error) {
-	platform, err := dprintPlatform()
-	if err != nil {
-		return "", fmt.Errorf(
-			"determining %s platform: %w",
-			tool, err,
-		)
-	}
-	binExt := ""
-	if runtime.GOOS == "windows" {
-		binExt = ".exe"
-	}
-	binPath := gotoolbox.ResolveToolPath(
-		fmt.Sprintf(
-			"%s-%s-%s%s",
-			tool, platform, version, binExt,
-		),
-	)
-	if _, err = os.Stat(binPath); err == nil {
-		// Already exists, skip downloading.
-		return binPath, nil
-	}
-
-	archiveName := fmt.Sprintf("dprint-%s.zip", platform)
-	archiveStream, err := gotoolbox.FetchGitHubReleaseAsset(
-		repository, version, archiveName,
-	)
-	if err != nil {
-		return "", err
-	}
-	defer archiveStream.Close()
-	archiveTemp, err := os.CreateTemp("", "*-"+archiveName)
-	if err != nil {
-		return "", fmt.Errorf(
-			"creating temporary file with pattern \"*-%s\": %w",
-			archiveName, err,
-		)
-	}
-	defer os.Remove(archiveTemp.Name())
-	defer archiveTemp.Close()
-	archiveHash := sha256.New()
-	archiveSize, err := io.Copy(
-		io.MultiWriter(archiveTemp, archiveHash),
-		archiveStream,
-	)
-	if err != nil {
-		return "", fmt.Errorf(
-			"copying archive response body for %q: %w",
-			archiveName, err,
-		)
-	}
-	archiveHashSum := hex.EncodeToString(archiveHash.Sum(nil))
-
-	checksumsStream, err := gotoolbox.FetchGitHubReleaseAsset(
-		repository, version, "SHASUMS256.txt",
-	)
-	if err != nil {
-		return "", err
-	}
-	defer checksumsStream.Close()
-	checksumsScanner := bufio.NewScanner(checksumsStream)
-	for checksumsScanner.Scan() {
-		fields := strings.Fields(checksumsScanner.Text())
-		if len(fields) >= 2 && fields[1] == archiveName {
-			if fields[0] != archiveHashSum {
-				return "", fmt.Errorf(
-					"checksum mismatch for %q: expected %q, got %q",
-					archiveName, fields[0], archiveHashSum,
-				)
-			}
-			break
-		}
-	}
-
-	zipReader, err := zip.NewReader(archiveTemp, archiveSize)
-	if err != nil {
-		return "", fmt.Errorf("creating zip reader: %w", err)
-	}
-	archiveBinName := tool + binExt
-	archiveBinFile := func() *zip.File {
-		for _, file := range zipReader.File {
-			if file.Name == archiveBinName {
-				return file
-			}
-		}
-		return nil
-	}()
-	if archiveBinFile == nil {
-		return "", fmt.Errorf(
-			"binary file %q not found in archive %q",
-			archiveBinName, archiveName,
-		)
-	}
-	archiveBinReader, err := archiveBinFile.Open()
-	if err != nil {
-		return "", fmt.Errorf(
-			"opening file %q in zip archive: %w",
-			archiveBinFile.Name, err,
-		)
-	}
-	defer archiveBinReader.Close()
-	binFile, err := os.OpenFile(
-		binPath,
-		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-		0755,
-	)
-	if err != nil {
-		return "", fmt.Errorf(
-			"creating binary file %q: %w",
-			binPath, err,
-		)
-	}
-	defer binFile.Close()
-	if _, err = io.Copy(binFile, archiveBinReader); err != nil {
-		return "", fmt.Errorf(
-			"copying archived file to %q: %w",
-			binPath, err,
-		)
-	}
-
-	return binPath, nil
-}
-
-func dprintPlatform() (string, error) {
-	goPlatform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
-	switch goPlatform {
-	case "darwin/amd64":
-		return "x86_64-apple-darwin", nil
-	case "darwin/arm64":
-		return "aarch64-apple-darwin", nil
-	case "linux/amd64":
-		if gotoolbox.IsMuslLibc() {
-			return "x86_64-unknown-linux-musl", nil
-		}
-		return "x86_64-unknown-linux-gnu", nil
-	case "linux/arm64":
-		if gotoolbox.IsMuslLibc() {
-			return "aarch64-unknown-linux-musl", nil
-		}
-		return "aarch64-unknown-linux-gnu", nil
-	case "linux/loong64":
-		if gotoolbox.IsMuslLibc() {
-			return "loongarch64-unknown-linux-musl", nil
-		}
-		return "loongarch64-unknown-linux-gnu", nil
-	case "linux/riscv64":
-		if gotoolbox.IsMuslLibc() {
-			return "", fmt.Errorf("unsupported %s (with musl libc)", goPlatform)
-		}
-		return "riscv64gc-unknown-linux-gnu", nil
-	case "windows/amd64":
-		return "x86_64-pc-windows-msvc", nil
-	}
-
-	return "", fmt.Errorf("unsupported %s", goPlatform)
+	dprint.DownloadAndExec()
 }

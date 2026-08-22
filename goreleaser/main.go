@@ -1,232 +1,76 @@
 package main
 
 import (
-	"archive/tar"
-	"archive/zip"
-	"bufio"
-	"compress/gzip"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"os"
-	"runtime"
-	"strings"
-
 	"github.com/jonasgeiler/gotoolbox"
 )
 
-const tool = "goreleaser"
-
-const (
-	// renovate: datasource=github-releases depName=dprint/dprint
-	version    = "v2.16.0"
-	repository = "goreleaser/goreleaser"
-)
+var goreleaser = &gotoolbox.Tool{
+	Name:    "goreleaser",
+	Version: "v2.16.0",
+	Binaries: map[gotoolbox.Platform]gotoolbox.DownloadInfo{
+		{OS: "darwin", Arch: "amd64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Darwin_x86_64.tar.gz",
+			Checksum:    "2b82d8319ee517d4242b48a858114b267c621f1dd1fe51a14680902b18a5dac8",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "darwin", Arch: "arm64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Darwin_arm64.tar.gz",
+			Checksum:    "8f6898256f35531165d90f2db581c5ee0d32bda83ebc25ac231ff5bdb9d2071a",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "linux", Arch: "386"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_i386.tar.gz",
+			Checksum:    "b6b0764b9e339fcfd8bcf1786424c99ddecbecf27d15025c189e1c64932a1563",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "linux", Arch: "amd64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_x86_64.tar.gz",
+			Checksum:    "eaae05b5eba07533bd0f06846b68c808399504784df00c62eb219541fc04e5e2",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "linux", Arch: "arm"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_armv7.tar.gz",
+			Checksum:    "c65b905052a85a2f3248bc85ce77cc62ac600302a595b524d375b850f85e8958",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "linux", Arch: "arm64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_arm64.tar.gz",
+			Checksum:    "0102d974373fcdeb77042d1f5897caffa193be36620fdc6c1da43a01ef8e10d3",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "linux", Arch: "loong64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_loong64.tar.gz",
+			Checksum:    "826f70d2f225e44b295a710ae229aa79f1ee5ef10d61cd537c1cf07113196060",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "linux", Arch: "ppc64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_ppc64.tar.gz",
+			Checksum:    "34920ed822616e10216069fec380c832ffad0501d7a9de6680aa103169e940b6",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "linux", Arch: "riscv64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Linux_riscv64.tar.gz",
+			Checksum:    "d3bfa4f1f4639d45cac045dd129dfabce6ece2b198de0391531b464f67cae273",
+			ExtractFile: "goreleaser",
+		},
+		{OS: "windows", Arch: "386"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Windows_i386.zip",
+			Checksum:    "d5b702f899a357670e1bd6ecc692a35baa61974185adb968c51ca441776cab7f",
+			ExtractFile: "goreleaser.exe",
+		},
+		{OS: "windows", Arch: "amd64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Windows_x86_64.zip",
+			Checksum:    "6fe5eda11f0bcac8069aff3ef3dcb0b11816c9e95f89773595564697a5278bc9",
+			ExtractFile: "goreleaser.exe",
+		},
+		{OS: "windows", Arch: "arm64"}: {
+			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Windows_arm64.zip",
+			Checksum:    "1183c81863044ce9baa89c1393c258949390b8df683df7ca959e9c718d7723c9",
+			ExtractFile: "goreleaser.exe",
+		},
+	},
+}
 
 func main() {
-	binPath, err := downloadIfNeeded()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Download Error: %v\n", err)
-		os.Exit(1)
-	}
-
-	gotoolbox.Exec(binPath)
-}
-
-func downloadIfNeeded() (string, error) {
-	platform, err := goreleaserPlatform()
-	if err != nil {
-		return "", fmt.Errorf(
-			"determining %s platform: %w",
-			tool, err,
-		)
-	}
-	archiveExt := ".tar.gz"
-	binExt := ""
-	if runtime.GOOS == "windows" {
-		archiveExt = ".zip"
-		binExt = ".exe"
-	}
-	binPath := gotoolbox.ResolveToolPath(
-		fmt.Sprintf(
-			"%s-%s-%s%s",
-			tool, platform, version, binExt,
-		),
-	)
-	if _, err = os.Stat(binPath); err == nil {
-		// Already exists, skip downloading.
-		return binPath, nil
-	}
-
-	archiveName := fmt.Sprintf("goreleaser_%s%s", platform, archiveExt)
-	archiveStream, err := gotoolbox.FetchGitHubReleaseAsset(
-		repository, version, archiveName,
-	)
-	if err != nil {
-		return "", err
-	}
-	defer archiveStream.Close()
-	archiveTemp, err := os.CreateTemp("", "*-"+archiveName)
-	if err != nil {
-		return "", fmt.Errorf(
-			"creating temporary file with pattern \"*-%s\": %w",
-			archiveName, err,
-		)
-	}
-	defer os.Remove(archiveTemp.Name())
-	defer archiveTemp.Close()
-	archiveHash := sha256.New()
-	archiveSize, err := io.Copy(
-		io.MultiWriter(archiveTemp, archiveHash),
-		archiveStream,
-	)
-	if err != nil {
-		return "", fmt.Errorf(
-			"copying archive response body for %q: %w",
-			archiveName, err,
-		)
-	}
-	archiveHashSum := hex.EncodeToString(archiveHash.Sum(nil))
-
-	checksumsStream, err := gotoolbox.FetchGitHubReleaseAsset(
-		repository, version, "checksums.txt",
-	)
-	if err != nil {
-		return "", err
-	}
-	defer checksumsStream.Close()
-	checksumsScanner := bufio.NewScanner(checksumsStream)
-	for checksumsScanner.Scan() {
-		fields := strings.Fields(checksumsScanner.Text())
-		if len(fields) >= 2 && fields[1] == archiveName {
-			if fields[0] != archiveHashSum {
-				return "", fmt.Errorf(
-					"checksum mismatch for %q: expected %q, got %q",
-					archiveName, fields[0], archiveHashSum,
-				)
-			}
-			break
-		}
-	}
-
-	archiveBinName := tool + binExt
-	var archiveBinReader io.Reader
-	if archiveExt == ".tar.gz" {
-		if _, err = archiveTemp.Seek(0, io.SeekStart); err != nil {
-			return "", fmt.Errorf(
-				"seeking to beginning of archive temp file: %w",
-				err,
-			)
-		}
-		gzipReader, err := gzip.NewReader(archiveTemp)
-		if err != nil {
-			return "", fmt.Errorf(
-				"creating gzip reader: %w",
-				err,
-			)
-		}
-		defer gzipReader.Close()
-		tarReader := tar.NewReader(gzipReader)
-		for {
-			header, err := tarReader.Next()
-			if err == io.EOF {
-				return "", fmt.Errorf(
-					"binary file %q not found in archive %q",
-					archiveBinName, archiveName,
-				)
-			}
-			if err != nil {
-				return "", fmt.Errorf(
-					"reading tar archive %q: %w",
-					archiveName, err,
-				)
-			}
-			if header.Typeflag == tar.TypeReg && header.Name == archiveBinName {
-				// Found the binary, so exit loop.
-				break
-			}
-		}
-		archiveBinReader = tarReader
-	} else {
-		zipReader, err := zip.NewReader(archiveTemp, archiveSize)
-		if err != nil {
-			return "", fmt.Errorf("creating zip reader: %w", err)
-		}
-		archiveBinFile := func() *zip.File {
-			for _, file := range zipReader.File {
-				if file.Name == archiveBinName {
-					return file
-				}
-			}
-			return nil
-		}()
-		if archiveBinFile == nil {
-			return "", fmt.Errorf(
-				"binary file %q not found in archive %q",
-				archiveBinName, archiveName,
-			)
-		}
-		archiveBinReadCloser, err := archiveBinFile.Open()
-		if err != nil {
-			return "", fmt.Errorf(
-				"opening file %q in zip archive: %w",
-				archiveBinFile.Name, err,
-			)
-		}
-		defer archiveBinReadCloser.Close()
-		archiveBinReader = archiveBinReadCloser
-	}
-	binFile, err := os.OpenFile(
-		binPath,
-		os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-		0755,
-	)
-	if err != nil {
-		return "", fmt.Errorf(
-			"creating binary file %q: %w",
-			binPath, err,
-		)
-	}
-	defer binFile.Close()
-	if _, err = io.Copy(binFile, archiveBinReader); err != nil {
-		return "", fmt.Errorf(
-			"copying archived file to %q: %w",
-			binPath, err,
-		)
-	}
-
-	return binPath, nil
-}
-
-func goreleaserPlatform() (string, error) {
-	goPlatform := fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)
-	switch goPlatform {
-	case "darwin/amd64":
-		return "Darwin_x86_64", nil
-	case "darwin/arm64":
-		return "Darwin_arm64", nil
-	case "linux/386":
-		return "Linux_i386", nil
-	case "linux/amd64":
-		return "Linux_x86_64", nil
-	case "linux/arm":
-		return "Linux_armv7", nil
-	case "linux/arm64":
-		return "Linux_arm64", nil
-	case "linux/loong64":
-		return "Linux_loong64", nil
-	case "linux/ppc64":
-		return "Linux_ppc64", nil
-	case "linux/riscv64":
-		return "Linux_riscv64", nil
-	case "windows/386":
-		return "Windows_i386", nil
-	case "windows/amd64":
-		return "Windows_x86_64", nil
-	case "windows/arm64":
-		return "Windows_arm64", nil
-	}
-
-	return "", fmt.Errorf("unsupported %s", goPlatform)
+	goreleaser.DownloadAndExec()
 }
