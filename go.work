@@ -3,5 +3,6 @@ go 1.26.1
 use (
 	.
 	./dprint
+	./golangci-lint
 	./goreleaser
 )
