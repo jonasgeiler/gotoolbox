@@ -8,6 +8,7 @@ var goreleaser = &gotoolbox.Tool{
 	Name:    "goreleaser",
 	Version: "v2.16.0",
 	Binaries: map[gotoolbox.Platform]gotoolbox.DownloadInfo{
+		// TODO: Maybe use build tags instead of a list like this?
 		{OS: "darwin", Arch: "amd64"}: {
 			URL:         "https://github.com/goreleaser/goreleaser/releases/download/v2.16.0/goreleaser_Darwin_x86_64.tar.gz",
 			Checksum:    "2b82d8319ee517d4242b48a858114b267c621f1dd1fe51a14680902b18a5dac8",

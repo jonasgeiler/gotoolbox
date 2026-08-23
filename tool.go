@@ -1,9 +1,6 @@
 package gotoolbox
 
 import (
-	"archive/tar"
-	"archive/zip"
-	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -11,7 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 )
 
 // BuildType differentiates between dynamically and statically linked builds of
@@ -65,7 +61,8 @@ func (t *Tool) downloadIfNeeded() (string, error) {
 		hostPlatform.Arch,
 		hostPlatform.Env.DirName(),
 	)
-	binCachePath := filepath.Join(binCacheDir, t.Name)
+	binCachePathName := t.Name
+	binCachePath := filepath.Join(binCacheDir, binCachePathName)
 	if _, err := os.Stat(binCachePath); err == nil {
 		// Already exists, skip downloading.
 		return binCachePath, nil
@@ -103,13 +100,15 @@ func (t *Tool) downloadIfNeeded() (string, error) {
 	}
 	defer binDownload.Close()
 
-	binDownloadFile, err := os.CreateTemp(binCacheDir,
-		".temp*-"+binDownloadFileName,
+	binDownloadFilePattern := ".temp*-" + binDownloadFileName
+	binDownloadFile, err := os.CreateTemp(
+		binCacheDir,
+		binDownloadFilePattern,
 	)
 	if err != nil {
 		return "", fmt.Errorf(
-			"creating temporary file with pattern \".temp*-%s\": %w",
-			binDownloadFileName, err,
+			"creating temporary file with pattern %q in %q: %w",
+			binDownloadFilePattern, binCacheDir, err,
 		)
 	}
 	defer os.Remove(binDownloadFile.Name())
@@ -135,105 +134,34 @@ func (t *Tool) downloadIfNeeded() (string, error) {
 		)
 	}
 
+	var finalBinDownloadFile *os.File
 	if binDownloadInfo.ExtractFile == "" {
-		// We have directly downloaded a binary and can just move the temporary
-		// file to its final location.
-		if err := binDownloadFile.Chmod(0755); err != nil {
-			return "", fmt.Errorf(
-				"changing file permissions for %q: %w",
-				binDownloadFile.Name(), err,
-			)
-		}
-		if err := os.Rename(binDownloadFile.Name(), binCachePath); err != nil {
-			return "", fmt.Errorf(
-				"moving temporary file %q to %q: %w",
-				binDownloadFile.Name(), binCachePath, err,
-			)
-		}
+		// We have directly downloaded a binary and can just finalize it.
+		finalBinDownloadFile = binDownloadFile
 	} else {
 		// We have downloaded an archive and need to extract it.
-		var archiveBinReader io.Reader
-		if strings.HasSuffix(binDownloadFileName, ".tar.gz") {
-			if _, err = binDownloadFile.Seek(0, io.SeekStart); err != nil {
-				return "", fmt.Errorf(
-					"seeking to beginning of archive temp file: %w",
-					err,
-				)
-			}
-			gzipReader, err := gzip.NewReader(binDownloadFile)
-			if err != nil {
-				return "", fmt.Errorf(
-					"creating gzip reader: %w",
-					err,
-				)
-			}
-			defer gzipReader.Close()
-			tarReader := tar.NewReader(gzipReader)
-			for {
-				header, err := tarReader.Next()
-				if err == io.EOF {
-					return "", fmt.Errorf(
-						"file %q not found in archive %q",
-						binDownloadInfo.ExtractFile, binDownloadFileName,
-					)
-				}
-				if err != nil {
-					return "", fmt.Errorf(
-						"reading tar archive %q: %w",
-						binDownloadFileName, err,
-					)
-				}
-				if header.Typeflag == tar.TypeReg && header.Name == binDownloadInfo.ExtractFile {
-					// Found the binary, so exit loop.
-					break
-				}
-			}
-			archiveBinReader = tarReader
-		} else if strings.HasSuffix(binDownloadFileName, ".zip") {
-			zipReader, err := zip.NewReader(binDownloadFile, binDownloadSize)
-			if err != nil {
-				return "", fmt.Errorf("creating zip reader: %w", err)
-			}
-			archiveBinFile := func() *zip.File {
-				for _, file := range zipReader.File {
-					if file.Name == binDownloadInfo.ExtractFile {
-						return file
-					}
-				}
-				return nil
-			}()
-			if archiveBinFile == nil {
-				return "", fmt.Errorf(
-					"binary file %q not found in archive %q",
-					binDownloadInfo.ExtractFile, binDownloadFileName,
-				)
-			}
-			archiveBinReadCloser, err := archiveBinFile.Open()
-			if err != nil {
-				return "", fmt.Errorf(
-					"opening file %q in zip archive: %w",
-					archiveBinFile.Name, err,
-				)
-			}
-			defer archiveBinReadCloser.Close()
-			archiveBinReader = archiveBinReadCloser
-		} else {
-			return "", fmt.Errorf(
-				"unsupported archive file format: %q",
-				binDownloadFileName,
-			)
+		archiveBinReader, err := OpenFileInArchive(
+			binDownloadFile,
+			binDownloadSize,
+			binDownloadInfo.ExtractFile,
+		)
+		if err != nil {
+			return "", err
 		}
-		binFile, err := os.OpenFile(
-			binCachePath,
-			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-			0755,
+		defer archiveBinReader.Close()
+
+		binFilePattern := ".temp*-" + binCachePathName
+		binFile, err := os.CreateTemp(
+			binCacheDir,
+			binFilePattern,
 		)
 		if err != nil {
 			return "", fmt.Errorf(
-				"creating binary file %q: %w",
-				binCachePath, err,
+				"creating temporary file with pattern %q in %q: %w",
+				binFilePattern, binCacheDir, err,
 			)
 		}
+		defer os.Remove(binFile.Name())
 		defer binFile.Close()
 		if _, err = io.Copy(binFile, archiveBinReader); err != nil {
 			return "", fmt.Errorf(
@@ -241,6 +169,21 @@ func (t *Tool) downloadIfNeeded() (string, error) {
 				binDownloadFileName, binCachePath, err,
 			)
 		}
+
+		finalBinDownloadFile = binFile
+	}
+
+	if err := finalBinDownloadFile.Chmod(0755); err != nil {
+		return "", fmt.Errorf(
+			"changing file permissions for %q: %w",
+			finalBinDownloadFile.Name(), err,
+		)
+	}
+	if err := os.Rename(finalBinDownloadFile.Name(), binCachePath); err != nil {
+		return "", fmt.Errorf(
+			"moving temporary file %q to %q: %w",
+			finalBinDownloadFile.Name(), binCachePath, err,
+		)
 	}
 
 	return binCachePath, nil
