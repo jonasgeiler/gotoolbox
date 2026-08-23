@@ -89,6 +89,22 @@ var dprint = &gotoolbox.Tool{
 	},
 }
 
+var downloadURL = muslOrGnuDownloadURL(MuslDownloadURL, GNUDownloadURL)
+
+func muslOrGnuDownloadURL(muslDownloadURL, gnuDownloadURL string) string {
+	if muslDownloadURL == "" {
+		return gnuDownloadURL
+	}
+	if gnuDownloadURL == "" {
+		return muslDownloadURL
+	}
+	if gotoolbox.IsHostPlatformEnvMusl() {
+		return muslDownloadURL
+	} else {
+		return gnuDownloadURL
+	}
+}
+
 func main() {
 	dprint.DownloadAndExec()
 }
