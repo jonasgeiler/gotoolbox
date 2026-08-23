@@ -1,6 +1,10 @@
 package main
 
 import (
+	"os"
+	"slices"
+	"strings"
+
 	"github.com/jonasgeiler/gotoolbox"
 )
 
@@ -92,5 +96,44 @@ var golangciLint = &gotoolbox.Tool{
 }
 
 func main() {
-	golangciLint.DownloadAndExec()
+	// golangciLint.DownloadAndExec()
+
+	var otherFileBuildTags []string
+	for platform, downloadInfo := range golangciLint.Binaries {
+		otherFileBuildTags = append(otherFileBuildTags,
+			"!("+platform.OS+" && "+platform.Arch+")",
+		)
+		err := os.WriteFile(
+			"artifact_"+platform.OS+"_"+platform.Arch+".go",
+			[]byte(`//go:build `+platform.OS+` && `+platform.Arch+`
+
+package main
+
+const (
+	DownloadURL = "`+downloadInfo.URL+`"
+	SHA256Sum   = "`+downloadInfo.Checksum+`"
+	ExtractFile = "`+downloadInfo.ExtractFile+`"
+)
+`),
+			0644,
+		)
+		if err != nil {
+			panic(err)
+		}
+	}
+	slices.Sort(otherFileBuildTags)
+	os.WriteFile(
+		"artifact_other.go",
+		[]byte(`//go:build `+strings.Join(otherFileBuildTags, " && ")+`
+
+package main
+
+const (
+	DownloadURL = ""
+	SHA256Sum   = ""
+	ExtractFile = ""
+)
+`),
+		0644,
+	)
 }
