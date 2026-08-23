@@ -103,33 +103,16 @@ func (t *Tool) downloadIfNeeded() (string, error) {
 	}
 	defer binDownload.Close()
 
-	var binDownloadFile *os.File
-	if binDownloadInfo.ExtractFile == "" {
-		// If we're not downloading an archive to be extract, just directly
-		// stream into the binary file.
-		binDownloadFile, err = os.OpenFile(
-			binCachePath,
-			os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
-			0755,
+	binDownloadFile, err := os.CreateTemp(binCacheDir,
+		".temp*-"+binDownloadFileName,
+	)
+	if err != nil {
+		return "", fmt.Errorf(
+			"creating temporary file with pattern \".temp*-%s\": %w",
+			binDownloadFileName, err,
 		)
-		if err != nil {
-			return "", fmt.Errorf(
-				"creating binary file %q: %w",
-				binDownloadFileName, err,
-			)
-		}
-	} else {
-		// If we're downloading an archive to be extracted, stream into a
-		// temporary file first.
-		binDownloadFile, err = os.CreateTemp("", "*-"+binDownloadFileName)
-		if err != nil {
-			return "", fmt.Errorf(
-				"creating temporary file with pattern \"*-%s\": %w",
-				binDownloadFileName, err,
-			)
-		}
-		defer os.Remove(binDownloadFile.Name())
 	}
+	defer os.Remove(binDownloadFile.Name())
 	defer binDownloadFile.Close()
 
 	binDownloadHash := sha256.New()
@@ -146,18 +129,28 @@ func (t *Tool) downloadIfNeeded() (string, error) {
 	binDownloadHashSum := hex.EncodeToString(binDownloadHash.Sum(nil))
 
 	if binDownloadHashSum != binDownloadInfo.Checksum {
-		if binDownloadInfo.ExtractFile == "" {
-			// If directly downloaded a binary, not an archive, we have to
-			// remove it here manually.
-			defer os.Remove(binCachePath)
-		}
 		return "", fmt.Errorf(
 			"checksum mismatch for file downloaded from %q: expected %q, got %q",
 			binDownloadInfo.URL, binDownloadInfo.Checksum, binDownloadHashSum,
 		)
 	}
 
-	if binDownloadInfo.ExtractFile != "" {
+	if binDownloadInfo.ExtractFile == "" {
+		// We have directly downloaded a binary and can just move the temporary
+		// file to its final location.
+		if err := binDownloadFile.Chmod(0755); err != nil {
+			return "", fmt.Errorf(
+				"changing file permissions for %q: %w",
+				binDownloadFile.Name(), err,
+			)
+		}
+		if err := os.Rename(binDownloadFile.Name(), binCachePath); err != nil {
+			return "", fmt.Errorf(
+				"moving temporary file %q to %q: %w",
+				binDownloadFile.Name(), binCachePath, err,
+			)
+		}
+	} else {
 		// We have downloaded an archive and need to extract it.
 		var archiveBinReader io.Reader
 		if strings.HasSuffix(binDownloadFileName, ".tar.gz") {
