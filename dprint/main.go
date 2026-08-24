@@ -4,6 +4,8 @@ import (
 	"github.com/jonasgeiler/gotoolbox"
 )
 
+// TODO: Update for new built tags method.
+
 var dprint = &gotoolbox.Tool{
 	Name:      "dprint",
 	Version:   "0.55.2",

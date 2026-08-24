@@ -11,11 +11,13 @@ import (
 	"runtime"
 )
 
+// Checksum defines how to verify the downloaded Artifact.
 type Checksum struct {
 	Algorithm crypto.Hash
 	Digest    string
 }
 
+// Artifact defines where and how to download the artifact for a tool.
 type Artifact struct {
 	CacheName         string
 	DownloadURL       string
@@ -24,7 +26,7 @@ type Artifact struct {
 	InArchiveFilePath string
 }
 
-// Tool defines a gotoolbox tool with its download and versioning info.
+// Tool defines a gotoolbox tool.
 type Tool struct {
 	Name     string
 	Artifact Artifact
@@ -40,7 +42,6 @@ func (t *Tool) Run() {
 			logPrefix, err,
 		)
 		if printErr != nil {
-			//goland:noinspection GoErrorStringFormat
 			panic(fmt.Errorf("%sDownload Error: %w", logPrefix, err))
 		}
 		os.Exit(1)
@@ -52,13 +53,13 @@ func (t *Tool) Run() {
 			logPrefix, err,
 		)
 		if printErr != nil {
-			//goland:noinspection GoErrorStringFormat
 			panic(fmt.Errorf("%sExec Error: %w", logPrefix, err))
 		}
 		os.Exit(1)
 	}
 }
 
+// TODO: Compare with dprint and goreleaser npm install.js scripts.
 func (t *Tool) DownloadIfNeeded() (string, error) {
 	if t.Artifact.DownloadURL == "" {
 		return "", fmt.Errorf(
