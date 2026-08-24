@@ -106,5 +106,5 @@ func muslOrGnuDownloadURL(muslDownloadURL, gnuDownloadURL string) string {
 }
 
 func main() {
-	dprint.DownloadAndExec()
+	dprint.Run()
 }

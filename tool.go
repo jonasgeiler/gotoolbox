@@ -1,190 +1,190 @@
 package gotoolbox
 
 import (
-	"crypto/sha256"
+	"crypto"
+	_ "crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
+	"runtime"
 )
 
-// BuildType differentiates between dynamically and statically linked builds of
-// release binaries.
-type BuildType int
+type Checksum struct {
+	Algorithm crypto.Hash
+	Digest    string
+}
 
-const (
-	// BuildTypeStatic means that platform environment matching is NOT needed.
-	BuildTypeStatic BuildType = iota
-
-	// BuildTypeDynamic means that platform environment matching is needed.
-	BuildTypeDynamic
-)
-
-// DownloadInfo describes from where to download a binary and what to do with
-// it after (verify checksum, extract, etc.).
-type DownloadInfo struct {
-	URL         string
-	Checksum    string
-	ExtractFile string
+type Artifact struct {
+	CacheName         string
+	DownloadURL       string
+	Checksum          Checksum
+	ArchiveFormat     ArchiveFormat
+	InArchiveFilePath string
 }
 
 // Tool defines a gotoolbox tool with its download and versioning info.
 type Tool struct {
-	Name      string
-	Version   string
-	BuildType BuildType
-	Binaries  map[Platform]DownloadInfo
+	Name     string
+	Artifact Artifact
 }
 
-func (t *Tool) DownloadAndExec() {
-	binPath, err := t.downloadIfNeeded()
+func (t *Tool) Run() {
+	toolFilePath, err := t.DownloadIfNeeded()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Download Error: %v\n", err)
+		_, printErr := fmt.Fprintf(os.Stderr, "Download Error: %v\n", err)
+		if printErr != nil {
+			//goland:noinspection GoErrorStringFormat
+			panic(fmt.Errorf("Download Error: %w", err))
+		}
 		os.Exit(1)
 	}
 
-	Exec(binPath)
+	err = Exec(toolFilePath)
+	if err != nil {
+		_, printErr := fmt.Fprintf(os.Stderr, "Exec Error: %v\n", err)
+		if printErr != nil {
+			//goland:noinspection GoErrorStringFormat
+			panic(fmt.Errorf("Exec Error: %w", err))
+		}
+		os.Exit(1)
+	}
 }
 
-func (t *Tool) downloadIfNeeded() (string, error) {
-	// If the tool builds dynamically linked binaries, we need the host platform
-	// with it's detected environment.
-	hostPlatform := HostPlatform(t.BuildType == BuildTypeDynamic)
+func (t *Tool) DownloadIfNeeded() (string, error) {
+	if t.Artifact.DownloadURL == "" {
+		return "", fmt.Errorf(
+			"unsupported platform: %s/%s",
+			runtime.GOOS, runtime.GOARCH,
+		)
+	}
+	if !t.Artifact.Checksum.Algorithm.Available() {
+		return "", fmt.Errorf(
+			"unsupported checksum algorithm: %s",
+			t.Artifact.Checksum.Algorithm,
+		)
+	}
 
-	binCacheDir := filepath.Join(
-		ToolCacheDir(), // TODO: Use Go workspace/module root instead? Traverse upwards until a go.work file found, if not found try again but look for go.mod. This would also allow just deleting old cached versions maybe.
-		t.Name,
-		t.Version,
-		hostPlatform.OS,
-		hostPlatform.Arch,
-		hostPlatform.Env.DirName(),
+	artifactCacheDirPath := filepath.Join(
+		CacheDirPath(), // TODO: Use Go workspace/module root instead? Traverse upwards until a go.work file found, if not found try again but look for go.mod. This would also allow just deleting old cached versions maybe.
+		t.Artifact.CacheName,
 	)
-	binCachePathName := t.Name
-	binCachePath := filepath.Join(binCacheDir, binCachePathName)
-	if _, err := os.Stat(binCachePath); err == nil {
+
+	toolFileName := t.Name
+	if runtime.GOOS == "windows" {
+		toolFileName += ".exe"
+	}
+	toolFilePath := filepath.Join(artifactCacheDirPath, toolFileName)
+	if _, err := os.Stat(toolFilePath); err == nil {
 		// Already exists, skip downloading.
-		return binCachePath, nil
+		return toolFilePath, nil
 	}
 
-	binDownloadInfo, ok := t.Binaries[hostPlatform]
-	if !ok {
-		return "", fmt.Errorf(
-			"no binary found for host platform: %s",
-			hostPlatform,
-		)
-	}
-
-	binDownloadFileName := path.Base(binDownloadInfo.URL)
-	if binDownloadFileName == "." || binDownloadInfo.URL == "/" {
-		return "", fmt.Errorf(
-			"failed to determine download file name from %q",
-			binDownloadInfo.URL,
-		)
-	}
-
-	if err := os.MkdirAll(binCacheDir, 0755); err != nil {
+	if err := os.MkdirAll(artifactCacheDirPath, 0755); err != nil {
 		return "", fmt.Errorf(
 			"creating binary cache directory %q: %w",
-			binCacheDir, err,
+			artifactCacheDirPath, err,
 		)
 	}
 
-	binDownload, err := Download(binDownloadInfo.URL)
+	artifactDownload, err := Download(t.Artifact.DownloadURL)
 	if err != nil {
 		return "", fmt.Errorf(
 			"downloading file from %q: %w",
-			binDownloadInfo.URL, err,
+			t.Artifact.DownloadURL, err,
 		)
 	}
-	defer binDownload.Close()
+	defer artifactDownload.Close()
 
-	binDownloadFilePattern := ".temp*-" + binDownloadFileName
-	binDownloadFile, err := os.CreateTemp(
-		binCacheDir,
-		binDownloadFilePattern,
+	artifactDownloadFile, err := os.CreateTemp(
+		artifactCacheDirPath,
+		".temp-download-*",
 	)
 	if err != nil {
 		return "", fmt.Errorf(
-			"creating temporary file with pattern %q in %q: %w",
-			binDownloadFilePattern, binCacheDir, err,
+			"creating temporary file %q: %w",
+			artifactCacheDirPath, err,
 		)
 	}
-	defer os.Remove(binDownloadFile.Name())
-	defer binDownloadFile.Close()
+	defer os.Remove(artifactDownloadFile.Name())
+	defer artifactDownloadFile.Close()
 
-	binDownloadHash := sha256.New()
-	binDownloadSize, err := io.Copy(
-		io.MultiWriter(binDownloadFile, binDownloadHash),
-		binDownload,
+	artifactDownloadHash := t.Artifact.Checksum.Algorithm.New()
+	artifactDownloadFileSize, err := io.Copy(
+		io.MultiWriter(artifactDownloadFile, artifactDownloadHash),
+		artifactDownload,
 	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"streaming/copying response body from %q: %w",
-			binDownloadInfo.URL, err,
+			t.Artifact.DownloadURL, err,
 		)
 	}
-	binDownloadHashSum := hex.EncodeToString(binDownloadHash.Sum(nil))
+	artifactDownloadDigest := hex.EncodeToString(artifactDownloadHash.Sum(nil))
 
-	if binDownloadHashSum != binDownloadInfo.Checksum {
+	if artifactDownloadDigest != t.Artifact.Checksum.Digest {
 		return "", fmt.Errorf(
 			"checksum mismatch for file downloaded from %q: expected %q, got %q",
-			binDownloadInfo.URL, binDownloadInfo.Checksum, binDownloadHashSum,
+			t.Artifact.DownloadURL,
+			t.Artifact.Checksum.Digest,
+			artifactDownloadDigest,
 		)
 	}
 
-	var finalBinDownloadFile *os.File
-	if binDownloadInfo.ExtractFile == "" {
-		// We have directly downloaded a binary and can just finalize it.
-		finalBinDownloadFile = binDownloadFile
+	var tempToolFile *os.File
+	if t.Artifact.ArchiveFormat == NotAnArchive {
+		// We have directly downloaded a binary and can just re-use it.
+		tempToolFile = artifactDownloadFile
 	} else {
 		// We have downloaded an archive and need to extract it.
-		archiveBinReader, err := OpenFileInArchive(
-			binDownloadFile,
-			binDownloadSize,
-			binDownloadInfo.ExtractFile,
+		inArchiveToolFile, err := OpenFileInArchive(
+			artifactDownloadFile,
+			artifactDownloadFileSize,
+			t.Artifact.ArchiveFormat,
+			t.Artifact.InArchiveFilePath,
 		)
 		if err != nil {
 			return "", err
 		}
-		defer archiveBinReader.Close()
+		defer inArchiveToolFile.Close()
 
-		binFilePattern := ".temp*-" + binCachePathName
-		binFile, err := os.CreateTemp(
-			binCacheDir,
-			binFilePattern,
+		tempToolFile, err = os.CreateTemp(
+			artifactCacheDirPath,
+			".temp-tool-*",
 		)
 		if err != nil {
 			return "", fmt.Errorf(
-				"creating temporary file with pattern %q in %q: %w",
-				binFilePattern, binCacheDir, err,
+				"creating temporary file in %q: %w",
+				artifactCacheDirPath, err,
 			)
 		}
-		defer os.Remove(binFile.Name())
-		defer binFile.Close()
-		if _, err = io.Copy(binFile, archiveBinReader); err != nil {
+		defer os.Remove(tempToolFile.Name())
+		defer tempToolFile.Close()
+
+		if _, err = io.Copy(
+			tempToolFile,
+			inArchiveToolFile,
+		); err != nil {
 			return "", fmt.Errorf(
 				"extracting file from %q to %q: %w",
-				binDownloadFileName, binCachePath, err,
+				artifactDownloadFile.Name(), tempToolFile.Name(), err,
 			)
 		}
-
-		finalBinDownloadFile = binFile
 	}
 
-	if err := finalBinDownloadFile.Chmod(0755); err != nil {
+	if err := tempToolFile.Chmod(0755); err != nil {
 		return "", fmt.Errorf(
 			"changing file permissions for %q: %w",
-			finalBinDownloadFile.Name(), err,
+			tempToolFile.Name(), err,
 		)
 	}
-	if err := os.Rename(finalBinDownloadFile.Name(), binCachePath); err != nil {
+	if err := os.Rename(tempToolFile.Name(), toolFilePath); err != nil {
 		return "", fmt.Errorf(
 			"moving temporary file %q to %q: %w",
-			finalBinDownloadFile.Name(), binCachePath, err,
+			tempToolFile.Name(), toolFilePath, err,
 		)
 	}
 
-	return binCachePath, nil
+	return toolFilePath, nil
 }
