@@ -30,23 +30,30 @@ type Tool struct {
 	Artifact Artifact
 }
 
+const logPrefix = "gotoolbox | "
+
 func (t *Tool) Run() {
 	toolFilePath, err := t.DownloadIfNeeded()
 	if err != nil {
-		_, printErr := fmt.Fprintf(os.Stderr, "Download Error: %v\n", err)
+		_, printErr := fmt.Fprintf(os.Stderr,
+			"%sDownload Error: %v\n",
+			logPrefix, err,
+		)
 		if printErr != nil {
 			//goland:noinspection GoErrorStringFormat
-			panic(fmt.Errorf("Download Error: %w", err))
+			panic(fmt.Errorf("%sDownload Error: %w", logPrefix, err))
 		}
 		os.Exit(1)
 	}
 
-	err = Exec(toolFilePath)
-	if err != nil {
-		_, printErr := fmt.Fprintf(os.Stderr, "Exec Error: %v\n", err)
+	if err := Exec(toolFilePath); err != nil {
+		_, printErr := fmt.Fprintf(os.Stderr,
+			"%sExec Error: %v\n",
+			logPrefix, err,
+		)
 		if printErr != nil {
 			//goland:noinspection GoErrorStringFormat
-			panic(fmt.Errorf("Exec Error: %w", err))
+			panic(fmt.Errorf("%sExec Error: %w", logPrefix, err))
 		}
 		os.Exit(1)
 	}
@@ -162,7 +169,7 @@ func (t *Tool) DownloadIfNeeded() (string, error) {
 		defer os.Remove(tempToolFile.Name())
 		defer tempToolFile.Close()
 
-		if _, err = io.Copy(
+		if _, err := io.Copy(
 			tempToolFile,
 			inArchiveToolFile,
 		); err != nil {
