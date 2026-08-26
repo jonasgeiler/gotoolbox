@@ -15,17 +15,14 @@ var gnuLibcRegex = regexp.MustCompile(`\bGNU +libc\b`)
 // IsHostPlatformEnvMusl returns true if the host platform is a musl libc environment.
 var IsHostPlatformEnvMusl = sync.OnceValue(
 	func() bool {
-		out, err := os.ReadFile("/proc/self/maps")
-		if err == nil {
+		if out, err := os.ReadFile("/proc/self/maps"); err == nil {
 			if muslRegex.Match(out) {
 				return true
 			}
 		}
 
-		lddPath, err := exec.LookPath("ldd")
-		if err == nil {
-			ldd, err := os.ReadFile(lddPath)
-			if err == nil {
+		if lddPath, err := exec.LookPath("ldd"); err == nil {
+			if ldd, err := os.ReadFile(lddPath); err == nil {
 				if muslRegex.Match(ldd) {
 					return true
 				} else if gnuLibcRegex.Match(ldd) {
@@ -33,10 +30,9 @@ var IsHostPlatformEnvMusl = sync.OnceValue(
 				}
 			}
 
-			lddVersion, err := exec.
-				Command(lddPath, "--version").
-				CombinedOutput()
-			if err == nil {
+			if lddVersion, err := exec.Command(
+				lddPath, "--version",
+			).CombinedOutput(); err == nil {
 				if muslRegex.Match(lddVersion) {
 					return true
 				} else if gnuLibcRegex.Match(lddVersion) {
