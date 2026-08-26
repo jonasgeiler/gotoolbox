@@ -8,34 +8,44 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
+)
+
+type ArchiveFormat int
+
+const (
+	NotAnArchive ArchiveFormat = iota
+	ZipArchive
+	TarArchive
+	TarGzipArchive
+	TarBzip2Archive
 )
 
 func OpenFileInArchive(
 	archiveFile *os.File,
 	archiveFileSize int64,
+	archiveFormat ArchiveFormat,
 	inArchiveFilePath string,
 ) (io.ReadCloser, error) {
-	archiveFilePath := archiveFile.Name()
-	archiveFilePathWithoutExt, archiveFileExt := splitArchiveFilePath(archiveFilePath)
-	if archiveFileExt == ".gz" || archiveFileExt == ".bz2" {
-		// Likely a .tar.gz or .tar.bz2 file, so try again and prepend.
-		archiveFileExt = filepath.Ext(archiveFilePathWithoutExt) + archiveFileExt
-	}
+	switch archiveFormat {
+	case ZipArchive:
+		return openFileInZipArchive(
+			archiveFile,
+			inArchiveFilePath,
+			archiveFileSize,
+		)
 
-	switch archiveFileExt {
-	case ".tar":
+	case TarArchive:
 		if err := resetArchiveFilePosition(archiveFile); err != nil {
 			return nil, err
 		}
 		return openFileInTarArchive(
 			archiveFile,
-			archiveFilePath,
+			archiveFile.Name(),
 			inArchiveFilePath,
 			false,
 		)
 
-	case ".tar.gz", ".taz", ".tgz":
+	case TarGzipArchive:
 		if err := resetArchiveFilePosition(archiveFile); err != nil {
 			return nil, err
 		}
@@ -43,17 +53,17 @@ func OpenFileInArchive(
 		if err != nil {
 			return nil, fmt.Errorf(
 				"creating gzip reader for %q: %w",
-				archiveFilePath, err,
+				archiveFile.Name(), err,
 			)
 		}
 		return openFileInTarArchive(
 			gzipReader,
-			archiveFilePath,
+			archiveFile.Name(),
 			inArchiveFilePath,
 			true,
 		)
 
-	case ".tar.bz2", ".tb2", ".tbz", ".tbz2", ".tz2":
+	case TarBzip2Archive:
 		if err := resetArchiveFilePosition(archiveFile); err != nil {
 			return nil, err
 		}
@@ -61,42 +71,17 @@ func OpenFileInArchive(
 			&ReadCloserWrapper{
 				Reader: bzip2.NewReader(archiveFile),
 			},
-			archiveFilePath,
+			archiveFile.Name(),
 			inArchiveFilePath,
 			false, // It is closable but a noop function.
 		)
 
-	case ".zip":
-		return openFileInZipArchive(
-			archiveFile,
-			archiveFilePath,
-			inArchiveFilePath,
-			archiveFileSize,
-		)
-
 	default:
 		return nil, fmt.Errorf(
-			"unsupported archive file format %q for %q",
-			archiveFileExt, archiveFilePath,
+			"unsupported archive file format: %q",
+			archiveFile.Name(),
 		)
 	}
-}
-
-// splitArchiveFilePath splits path immediately before the final extension,
-// separating it into a path without the extension and an extension.
-// The extension is the suffix beginning at the final dot in the
-// final element of path; it is empty if there is no dot.
-// splitArchiveFilePath returns the same extension as [filepath.Ext].
-// The returned values have the property that path = root+ext.
-func splitArchiveFilePath(path string) (root, ext string) {
-	// Note: This could be a generic "SplitExt" function and doesn't really have
-	// anything to do with archives, but it's only used by OpenFileInArchive.
-	for i := len(path) - 1; i >= 0 && !os.IsPathSeparator(path[i]); i-- {
-		if path[i] == '.' {
-			return path[:i], path[i:]
-		}
-	}
-	return path, ""
 }
 
 // resetArchiveFilePosition resets the current file position for some
@@ -171,8 +156,7 @@ func openFileInTarArchive(
 }
 
 func openFileInZipArchive(
-	archiveFile io.ReaderAt,
-	archiveFilePath string,
+	archiveFile *os.File,
 	inArchiveFilePath string,
 	archiveFileSize int64,
 ) (io.ReadCloser, error) {
@@ -180,7 +164,7 @@ func openFileInZipArchive(
 	if err != nil {
 		return nil, fmt.Errorf(
 			"creating zip reader for %q: %w",
-			archiveFilePath, err,
+			archiveFile.Name(), err,
 		)
 	}
 
@@ -188,12 +172,13 @@ func openFileInZipArchive(
 	for _, file := range zipReader.File {
 		if file.Name == inArchiveFilePath {
 			inArchiveFile = file
+			break
 		}
 	}
 	if inArchiveFile == nil {
 		return nil, fmt.Errorf(
 			"file %q not found in archive %q",
-			inArchiveFilePath, archiveFilePath,
+			inArchiveFilePath, archiveFile.Name(),
 		)
 	}
 
