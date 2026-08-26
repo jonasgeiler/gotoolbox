@@ -10,23 +10,26 @@ import (
 )
 
 var muslRegex = regexp.MustCompile(`\bmusl\b`)
-var gnuLibcRegex = regexp.MustCompile(`\bGNU +libc\b`)
+var glibcRegex = regexp.MustCompile(`\bGNU +libc\b`)
 
-// IsHostPlatformEnvMusl returns true if the host platform is a musl libc environment.
-var IsHostPlatformEnvMusl = sync.OnceValue(
+// IsGlibcEnv returns true if the host platform is a GNU libc environment.
+// Otherwise, e.g. on musl libc environments, returns false.
+var IsGlibcEnv = sync.OnceValue(
 	func() bool {
+		// TODO: Detect with CGO and preprocessor definitions?
+
 		if out, err := os.ReadFile("/proc/self/maps"); err == nil {
 			if muslRegex.Match(out) {
-				return true
+				return false
 			}
 		}
 
 		if lddPath, err := exec.LookPath("ldd"); err == nil {
 			if ldd, err := os.ReadFile(lddPath); err == nil {
 				if muslRegex.Match(ldd) {
-					return true
-				} else if gnuLibcRegex.Match(ldd) {
 					return false
+				} else if glibcRegex.Match(ldd) {
+					return true
 				}
 			}
 
@@ -34,9 +37,9 @@ var IsHostPlatformEnvMusl = sync.OnceValue(
 				lddPath, "--version",
 			).CombinedOutput(); err == nil {
 				if muslRegex.Match(lddVersion) {
-					return true
-				} else if gnuLibcRegex.Match(lddVersion) {
 					return false
+				} else if glibcRegex.Match(lddVersion) {
+					return true
 				}
 			}
 		}
