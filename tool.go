@@ -2,7 +2,6 @@ package gotoolbox
 
 import (
 	"crypto"
-	_ "crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"

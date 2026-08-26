@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto"
+	_ "crypto/sha256"
 
 	"github.com/jonasgeiler/gotoolbox"
 )
