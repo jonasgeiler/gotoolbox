@@ -172,6 +172,7 @@ func openFileInZipArchive(
 	for _, file := range zipReader.File {
 		if file.Name == inArchiveFilePath {
 			inArchiveFile = file
+			break
 		}
 	}
 	if inArchiveFile == nil {
