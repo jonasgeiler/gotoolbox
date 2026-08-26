@@ -7,6 +7,7 @@ const (
 	ArtifactCacheName          = ""
 	ArtifactDownloadURL        = ""
 	ArtifactSHA256Digest       = ""
+	ArtifactCacheName_glibc    = ""
 	ArtifactDownloadURL_glibc  = ""
 	ArtifactSHA256Digest_glibc = ""
 	ArtifactInArchiveFilePath  = ""
