@@ -1,0 +1,24 @@
+/*******************************************************/
+/*              Mend Renovate config file              */
+/* https://docs.renovatebot.com/configuration-options/ */
+/*******************************************************/
+
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"github>jonasgeiler/renovate-config",
+		// TODO: Remove and automate.
+		":automergeDisabled"
+	],
+	"customManagers": [
+		{
+			"customType": "regex",
+			"managerFilePatterns": [
+				"/\\/version\\.go$/"
+			],
+			"matchStrings": [
+				"\\\/\\\/ renovate: datasource=(?<datasource>[a-zA-Z0-9-._]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: registryUrl=(?<registryUrl>[^\\s]+?))?\\s+(?:const|var)\\s+(?:[A-Za-z0-9_]+?)?Version\\s*=\\s*\"(?<currentValue>.+?)\""
+			]
+		}
+	]
+}
