@@ -102,7 +102,7 @@ func (t *Tool) DownloadIfNeeded() (string, error) {
 			t.Artifact.DownloadURL, err,
 		)
 	}
-	defer artifactDownload.Close()
+	defer artifactDownload.Body.Close()
 
 	artifactDownloadFile, err := os.CreateTemp(
 		artifactCacheDirPath,
@@ -119,8 +119,18 @@ func (t *Tool) DownloadIfNeeded() (string, error) {
 
 	artifactDownloadHash := t.Artifact.Checksum.Algorithm.New()
 	artifactDownloadFileSize, err := io.Copy(
-		io.MultiWriter(artifactDownloadFile, artifactDownloadHash),
-		artifactDownload,
+		io.MultiWriter(
+			artifactDownloadFile,
+			artifactDownloadHash,
+			&DownloadProgressPrinter{
+				ExpectedBytes: artifactDownload.ContentLength,
+				LogPrefix: fmt.Sprintf(
+					"%sDownloading %s took longer than expected. ",
+					logPrefix, t.Name,
+				),
+			},
+		),
+		artifactDownload.Body,
 	)
 	if err != nil {
 		return "", fmt.Errorf(
