@@ -4,4 +4,4 @@ package main
 // Only used for cache name and in-archive file path.
 //
 // renovate: datasource=github-releases depName=goreleaser/goreleaser
-const Version = "2.16.0"
+const Version = "2.18.0"
