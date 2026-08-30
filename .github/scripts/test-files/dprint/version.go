@@ -1,0 +1,9 @@
+//go:build exclude
+
+package github_scripts_test
+
+// Version of dprint to use.
+// Only used for cache name and in-archive file path.
+//
+// renovate: datasource=github-releases depName=dprint/dprint
+const Version = "0.55.2"

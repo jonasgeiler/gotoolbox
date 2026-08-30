@@ -9,3 +9,16 @@
 !.idea/icon.svg
 .vscode/*
 !.vscode/extensions.json
+
+# Node.js
+node_modules/
+.pnp/
+.yarn/
+.pnp.*
+package-lock.json
+yarn.lock
+
+# Scribble Files
+test.sh
+test.[jt]s
+test.go

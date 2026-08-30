@@ -1,0 +1,44 @@
+name: Check GitHub Scripts
+
+on:
+  push:
+    branches:
+      - main
+      - 'renovate/**'
+    paths: &paths
+      - '.github/scripts/**'
+
+  pull_request:
+    branches:
+      - main
+    paths: *paths
+
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  code-quality:
+    name: Code Quality
+
+    # We are using ubuntu-slim because it is a really fast little job.
+    runs-on: ubuntu-slim
+    defaults:
+      run:
+        shell: bash --noprofile --norc -euxo pipefail {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm & Node.js
+        uses: pnpm/setup@703c52620218391530e48b9e8870d5c0082e1b9b # v2.1.0
+        with:
+          working-directory: &working-directory .github/scripts
+          cache: true
+          require-lockfile: true
+
+      - name: Run all checks
+        working-directory: *working-directory
+        run: pnpm run check

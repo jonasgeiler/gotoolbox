@@ -1,0 +1,45 @@
+name: Release Tools
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '*/version.go'
+
+jobs:
+  release-tools:
+    name: Release Tools
+
+    # We are using ubuntu-slim because it is a really fast little job.
+    runs-on: ubuntu-slim
+    defaults:
+      run:
+        shell: bash --noprofile --norc -euxo pipefail {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Get changed version.go files
+        id: changed-version-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          separator: "\n"
+          files: |
+            */version.go
+
+      - name: Release tools with changed version.go files
+        if: steps.changed-version-files.outputs.any_changed == 'true'
+        env:
+          CHANGED_VERSION_GO_FILE_PATHS: ${{ steps.changed-version-files.outputs.all_changed_files }}
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          # language=javascript
+          script: |
+            const workspace = "${{ github.workspace }}";
+            const { default: script } = await import(workspace + "/.github/scripts/release-tools.ts")
+            await script({ context, core, github, octokit, getOctokit, exec, glob, io, require, __original_require__, workspace });
