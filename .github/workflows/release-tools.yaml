@@ -8,6 +8,7 @@ on:
       - '*/version.go'
 
 jobs:
+  # TODO: Require check workflow to succeed.
   release-tools:
     name: Release Tools
 

@@ -4,6 +4,8 @@ import type { PaginateInterface } from "@octokit/plugin-paginate-rest";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, join as joinPaths } from "node:path";
 
+// TODO: Add some logging.
+
 type ScriptFunctionArgs = AsyncFunctionArguments & {
 	github: Api & {
 		paginate: PaginateInterface;
@@ -210,6 +212,7 @@ async function releaseToolFromVersionGo(
 ${toolRelease.body_html || toolRelease.body || "(No release notes)"}`;
 
 	// Create release and it's git tag.
+	// TODO: Gracefully handle existing releases?
 	await github.rest.repos.createRelease({
 		owner,
 		repo,

@@ -58,8 +58,8 @@ func (t *Tool) Run() {
 	}
 }
 
-// TODO: Compare with dprint and goreleaser npm install.js scripts.
 func (t *Tool) DownloadIfNeeded() (string, error) {
+	// TODO: Compare with dprint and goreleaser npm install.js scripts.
 	if t.Artifact.DownloadURL == "" {
 		return "", fmt.Errorf(
 			"unsupported platform: %s/%s",
@@ -74,7 +74,9 @@ func (t *Tool) DownloadIfNeeded() (string, error) {
 	}
 
 	artifactCacheDirPath := filepath.Join(
-		CacheDirPath(), // TODO: Use Go workspace/module root instead? Traverse upwards until a go.work file found, if not found try again but look for go.mod. This would also allow just deleting old cached versions maybe.
+		// TODO: Use Go workspace/module root instead? Traverse upwards until a go.work file found, if not found try again but look for go.mod. This would also allow just deleting old cached versions maybe.
+		//  The only problem is that the tools would have to be downloaded for each project. Maybe use a central store and hardlink the tools into the project dir, like pnpm?
+		CacheDirPath(),
 		t.Artifact.CacheName,
 	)
 

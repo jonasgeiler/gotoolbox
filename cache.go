@@ -24,3 +24,5 @@ func CacheDirPath() string {
 	// Fall back to global temp dir (e.g. /tmp/gotoolbox).
 	return filepath.Join(os.TempDir(), cacheDirName)
 }
+
+// TODO: Better cache management. At the moment it would grow indefinitely.
