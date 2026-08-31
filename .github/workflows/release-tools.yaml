@@ -11,11 +11,18 @@ jobs:
   release-tools:
     name: Release Tools
 
+    concurrency:
+      group: release-tools
+      cancel-in-progress: false
+
     # We are using ubuntu-slim because it is a really fast little job.
     runs-on: ubuntu-slim
     defaults:
       run:
         shell: bash --noprofile --norc -euxo pipefail {0}
+
+    permissions:
+      contents: write # For creating releases.
 
     steps:
       - name: Check out repository
