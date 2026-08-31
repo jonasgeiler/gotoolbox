@@ -3,7 +3,6 @@ import type { Api } from "@octokit/plugin-rest-endpoint-methods";
 import type { PaginateInterface } from "@octokit/plugin-paginate-rest";
 import { readFile } from "node:fs/promises";
 import { basename, dirname, join as joinPaths } from "node:path";
-import { RequestError } from "@octokit/request-error";
 
 type ScriptFunctionArgs = AsyncFunctionArguments & {
 	github: Api & {
@@ -144,8 +143,8 @@ async function getReleaseByVersionTag(
 				Accept: "application/vnd.github.html+json",
 			},
 		});
-	} catch (error: unknown) {
-		if (error instanceof RequestError && error.status === 404) {
+	} catch (error: any) {
+		if (error.name === "HttpError" && error.status === 404) {
 			// Try again with/without a "v" prefix.
 			try {
 				return await github.rest.repos.getReleaseByTag({
