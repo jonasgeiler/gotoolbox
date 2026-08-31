@@ -8,8 +8,8 @@ import (
 
 const (
 	ArtifactCacheName         = "golangci-lint-v" + Version + "-darwin-amd64"
-	ArtifactDownloadURL       = "https://github.com/golangci/golangci-lint/releases/download/v2.12.2/golangci-lint-" + Version + "-darwin-amd64.tar.gz"
-	ArtifactSHA256Digest      = "f6f06d94b6241521c53d15450c5209b028270bf966f842afb11c030c79f5bc16"
+	ArtifactDownloadURL       = "https://github.com/golangci/golangci-lint/releases/download/v2.13.2/golangci-lint-" + Version + "-darwin-amd64.tar.gz"
+	ArtifactSHA256Digest      = "8a13aaf9cbbb1dee52824e862cf0d0720e5bb97c1f4260d1e51623a09492b57b"
 	ArtifactArchiveFormat     = gotoolbox.TarGzipArchive
 	ArtifactInArchiveFilePath = "golangci-lint-" + Version + "-darwin-amd64/golangci-lint"
 )

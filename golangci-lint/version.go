@@ -4,4 +4,4 @@ package main
 // Only used for cache name and in-archive file path.
 //
 // renovate: datasource=github-releases depName=golangci/golangci-lint
-const Version = "2.12.2"
+const Version = "2.13.2"
