@@ -1,0 +1,45 @@
+name: Check
+
+on:
+  push:
+    branches:
+      - main
+      - 'renovate/**'
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  code-formatting:
+    name: Code Formatting
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash --noprofile --norc -euxo pipefail {0}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Determine dprint version
+        # language="shell script"
+        run: |
+          dprint_version="$(grep -E '(const|var).*Version.*=' dprint/version.go | cut -d'"' -f2)"
+          if [[ -z "${dprint_version}" ]]; then
+            echo "Error: Version not found in dprint/version.go" >&2
+            exit 1
+          fi
+
+          echo "DPRINT_VERSION=${dprint_version}" >> "${GITHUB_ENV}"
+
+      - name: Run dprint check
+        uses: dprint/check@9cb3a2b17a8e606d37aae341e49df3654933fc23 # v2.3
+        with:
+          dprint-version: ${{ env.DPRINT_VERSION }}
