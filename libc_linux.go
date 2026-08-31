@@ -9,8 +9,10 @@ import (
 	"sync"
 )
 
-var muslRegex = regexp.MustCompile(`\bmusl\b`)
-var glibcRegex = regexp.MustCompile(`\bGNU +libc\b`)
+var (
+	muslRegex  = regexp.MustCompile(`\bmusl\b`)
+	glibcRegex = regexp.MustCompile(`\bGNU +libc\b`)
+)
 
 // IsGlibcEnv returns true if the host platform is a GNU libc environment.
 // Otherwise, e.g. on musl libc environments, returns false.

@@ -43,7 +43,9 @@
 				":separatePatchReleases",
 				":automergeAll"
 			],
-			"automergeSchedule": ["at any time"]
+			"automergeSchedule": [
+				"at any time"
+			]
 		},
 		{
 			"matchFileNames": [
@@ -54,5 +56,7 @@
 			]
 		}
 	],
-	"ignorePaths": ["**/test-files/**"]
+	"ignorePaths": [
+		"**/test-files/**"
+	]
 }

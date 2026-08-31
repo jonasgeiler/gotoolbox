@@ -7,19 +7,25 @@ import { RequestError } from "@octokit/request-error";
 
 type ScriptFunctionArgs = AsyncFunctionArguments & {
 	github: Api & {
-		paginate: PaginateInterface,
-	},
-	workspace: string,
+		paginate: PaginateInterface;
+	};
+	workspace: string;
 };
 
-const RENOVATE_CONFIG_FILE_PATH = joinPaths(import.meta.dirname, "..", "renovate.jsonc");
+const RENOVATE_CONFIG_FILE_PATH = joinPaths(
+	import.meta.dirname,
+	"..",
+	"renovate.jsonc",
+);
 const RENOVATE_CONFIG: {
 	customManagers: {
-		customType: "regex" | "jsonata"
-		managerFilePatterns: string[]
-		matchStrings: string[]
-	}[]
-} = Function(`"use strict"; return (${await readFile(RENOVATE_CONFIG_FILE_PATH)});`)();
+		customType: "regex" | "jsonata";
+		managerFilePatterns: string[];
+		matchStrings: string[];
+	}[];
+} = Function(
+	`"use strict"; return (${await readFile(RENOVATE_CONFIG_FILE_PATH)});`,
+)();
 
 function renovatePatternToRegExp(renovatePattern: string): RegExp {
 	let negated = false;
@@ -30,7 +36,9 @@ function renovatePatternToRegExp(renovatePattern: string): RegExp {
 		renovatePattern = renovatePattern.substring(2);
 		negated = true;
 	} else {
-		const error = new Error(`Invalid renovate config pattern: ${renovatePattern}`);
+		const error = new Error(
+			`Invalid renovate config pattern: ${renovatePattern}`,
+		);
 		error.name = "InvalidRenovatePatternError";
 		throw error;
 	}
@@ -44,7 +52,9 @@ function renovatePatternToRegExp(renovatePattern: string): RegExp {
 		renovatePattern = renovatePattern.slice(0, -2);
 		patternFlags += "i";
 	} else {
-		const error = new Error(`Invalid renovate config pattern: ${renovatePattern}`);
+		const error = new Error(
+			`Invalid renovate config pattern: ${renovatePattern}`,
+		);
 		error.name = "InvalidRenovatePatternError";
 		throw error;
 	}
@@ -74,20 +84,25 @@ function isRenovateCustomManagerForVersionGoFiles(
 	return false;
 }
 
-interface RenovateManagerFields  {
-	datasource: string
-	depName: string
-	currentValue: string
+interface RenovateManagerFields {
+	datasource: string;
+	depName: string;
+	currentValue: string;
 }
 
-async function getRenovateManagerFields(versionGoFilePath: string): Promise<RenovateManagerFields> {
+async function getRenovateManagerFields(
+	versionGoFilePath: string,
+): Promise<RenovateManagerFields> {
 	const versionGoFileContents = await readFile(versionGoFilePath, "utf8");
 
 	for (const customManager of RENOVATE_CONFIG.customManagers) {
 		// Skip custom managers that don't use regex or don't manage version.go files.
 		if (
 			customManager.customType !== "regex" ||
-			!isRenovateCustomManagerForVersionGoFiles(customManager, versionGoFilePath)
+			!isRenovateCustomManagerForVersionGoFiles(
+				customManager,
+				versionGoFilePath,
+			)
 		) {
 			continue;
 		}
@@ -107,7 +122,9 @@ async function getRenovateManagerFields(versionGoFilePath: string): Promise<Reno
 		}
 	}
 
-	const error = new Error(`Failed to match renovate manager fields in: ${versionGoFilePath}`);
+	const error = new Error(
+		`Failed to match renovate manager fields in: ${versionGoFilePath}`,
+	);
 	error.name = "NoMatchingRenovateManagerFieldsError";
 	throw error;
 }
@@ -120,7 +137,9 @@ async function getReleaseByVersionTag(
 ) {
 	try {
 		return await github.rest.repos.getReleaseByTag({
-			owner, repo, tag,
+			owner,
+			repo,
+			tag,
 			headers: {
 				Accept: "application/vnd.github.html+json",
 			},
@@ -130,7 +149,8 @@ async function getReleaseByVersionTag(
 			// Try again with/without a "v" prefix.
 			try {
 				return await github.rest.repos.getReleaseByTag({
-					owner, repo,
+					owner,
+					repo,
 					tag: tag.startsWith("v") ? tag.substring(1) : `v${tag}`,
 					headers: {
 						Accept: "application/vnd.github.html+json",
@@ -159,7 +179,9 @@ async function releaseToolFromVersionGo(
 		currentValue: toolVersion,
 	} = await getRenovateManagerFields(versionGoFilePath);
 	if (toolVersionDatasource !== "github-releases") {
-		const error = new Error(`Unsupported version.go datasource: ${toolVersionDatasource}`);
+		const error = new Error(
+			`Unsupported version.go datasource: ${toolVersionDatasource}`,
+		);
 		error.name = "UnsupportedDatasourceError";
 		throw error;
 	}
@@ -171,7 +193,9 @@ async function releaseToolFromVersionGo(
 		throw error;
 	}
 
-	const toolRelease = (await getReleaseByVersionTag(github, toolOwner, toolRepo, toolVersion)).data;
+	const toolRelease = (
+		await getReleaseByVersionTag(github, toolOwner, toolRepo, toolVersion)
+	).data;
 
 	// Construct a tag name that Go module discovery likes (name and "v" prefix).
 	let moduleVersion = toolVersion;
@@ -188,7 +212,12 @@ ${toolRelease.body_html || toolRelease.body || "(No release notes)"}`;
 
 	// Create release and it's git tag.
 	await github.rest.repos.createRelease({
-		owner, repo, tag_name, target_commitish, name: tag_name, body,
+		owner,
+		repo,
+		tag_name,
+		target_commitish,
+		name: tag_name,
+		body,
 
 		// None of the releases should be "latest", since we have multiple
 		// different releases for individual tools in one repo.
@@ -198,20 +227,21 @@ ${toolRelease.body_html || toolRelease.body || "(No release notes)"}`;
 
 export default async (args: ScriptFunctionArgs) => {
 	if (!process.env.CHANGED_VERSION_GO_FILE_PATHS?.trim()) {
-		const error = new Error("Empty CHANGED_VERSION_GO_FILE_PATHS environment variable.");
+		const error = new Error(
+			"Empty CHANGED_VERSION_GO_FILE_PATHS environment variable.",
+		);
 		error.name = "InvalidEnvError";
 		throw error;
 	}
 	const results = await Promise.allSettled(
-		process.env.CHANGED_VERSION_GO_FILE_PATHS
-			.split("\n")
-			.map(
-				(relativeVersionGoFilePath) => releaseToolFromVersionGo(
+		process.env.CHANGED_VERSION_GO_FILE_PATHS.split("\n").map(
+			(relativeVersionGoFilePath) =>
+				releaseToolFromVersionGo(
 					args,
 					// Resolve version.go file path from repo root.
 					joinPaths(import.meta.dirname, "..", "..", relativeVersionGoFilePath),
-				)
-			),
+				),
+		),
 	);
 	const errors = [];
 	for (const result of results) {
@@ -220,6 +250,9 @@ export default async (args: ScriptFunctionArgs) => {
 		}
 	}
 	if (errors.length > 0) {
-		throw new AggregateError(errors, "Some errors occurred while releasing tool versions");
+		throw new AggregateError(
+			errors,
+			"Some errors occurred while releasing tool versions",
+		);
 	}
-}
+};

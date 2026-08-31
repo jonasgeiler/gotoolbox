@@ -1,0 +1,43 @@
+/*****************************/
+/*    dprint config file     */
+/* https://dprint.dev/config */
+/*****************************/
+
+{
+	"plugins": [
+		"https://plugins.dprint.dev/markdown-0.23.2.wasm",
+		"https://plugins.dprint.dev/biome-0.13.9.wasm",
+		"https://plugins.dprint.dev/jakebailey/gofumpt-v0.0.16.wasm",
+		"https://plugins.dprint.dev/g-plane/pretty_yaml-v0.6.0.wasm"
+	],
+	"useTabs": true,
+	"indentWidth": 2,
+	"newLineKind": "lf",
+	"lineWidth": 80,
+	"excludes": [
+		"**/pnpm-lock.yaml"
+	],
+
+	// Markdown plugin config (https://dprint.dev/plugins/markdown/config/)
+	"markdown": {
+		"overrides": [
+			{
+				"files": [
+					"**/LICENSE.md"
+				],
+				"heading.kind": "setext"
+			}
+		]
+	},
+
+	// Biome plugin config (https://dprint.dev/plugins/biome/config/)
+	"biome": {
+		// Forces all arrays and objects to be expanded, not collapsed.
+		"json.lineWidth": 1
+	},
+
+	// YAML plugin config (https://dprint.dev/plugins/pretty_yaml/config/)
+	"yaml": {
+		"quotes": "preferSingle"
+	}
+}

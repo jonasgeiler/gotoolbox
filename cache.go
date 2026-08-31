@@ -5,8 +5,10 @@ import (
 	"path/filepath"
 )
 
-const cacheDirName = "gotoolbox"
-const cacheDirHiddenName = ".gotoolbox"
+const (
+	cacheDirName       = "gotoolbox"
+	cacheDirHiddenName = ".gotoolbox"
+)
 
 func CacheDirPath() string {
 	// Try to use user's cache dir (e.g. /home/username/.cache/gotoolbox).
