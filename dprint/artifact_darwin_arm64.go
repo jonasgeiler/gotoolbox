@@ -5,8 +5,8 @@ package main
 //goland:noinspection GoSnakeCaseUsage
 const (
 	ArtifactCacheName          = "dprint-v" + Version + "-darwin-arm64"
-	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.57.0/dprint-aarch64-apple-darwin.zip"
-	ArtifactSHA256Digest       = "14bdbfb9b1e3ebd614d5ec08a068b04b0d0370d70c112723003dd9103a4c0c3a"
+	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.57.1/dprint-aarch64-apple-darwin.zip"
+	ArtifactSHA256Digest       = "3113fb58a126df96c95653638f068fe430f342623dfdf08e3fa32d4e704194ea"
 	ArtifactCacheName_glibc    = ""
 	ArtifactDownloadURL_glibc  = ""
 	ArtifactSHA256Digest_glibc = ""
