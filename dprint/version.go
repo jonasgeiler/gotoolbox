@@ -4,4 +4,4 @@ package main
 // Only used for cache name and in-archive file path.
 //
 // renovate: datasource=github-releases depName=dprint/dprint
-const Version = "0.57.1"
+const Version = "0.57.2"
