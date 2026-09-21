@@ -13,7 +13,7 @@
 		"@octokit/plugin-rest-endpoint-methods": "17.0.0",
 		"@octokit/request-error": "7.1.2",
 		"@types/node": "26.6.1",
-		"typescript": "6.0.3"
+		"typescript": "7.0.2"
 	},
 	"scripts": {
 		"check": "pnpm run '/^check:.*/'",
