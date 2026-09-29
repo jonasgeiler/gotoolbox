@@ -8,7 +8,7 @@ const (
 	ArtifactDownloadURL        = ""
 	ArtifactSHA256Digest       = ""
 	ArtifactCacheName_glibc    = "dprint-v" + Version + "-linux-riscv64-glibc"
-	ArtifactDownloadURL_glibc  = "https://github.com/dprint/dprint/releases/download/0.57.4/dprint-riscv64gc-unknown-linux-gnu.zip"
-	ArtifactSHA256Digest_glibc = "04a90c94c0b22d165088ff680644225910125b99731348a82fd7bf2926b9edee"
+	ArtifactDownloadURL_glibc  = "https://github.com/dprint/dprint/releases/download/0.58.0/dprint-riscv64gc-unknown-linux-gnu.zip"
+	ArtifactSHA256Digest_glibc = "81b2e4138324b1bb78bafc13e72d8073e001c7164a579ede11128534ec41bfe4"
 	ArtifactInArchiveFilePath  = "dprint"
 )
