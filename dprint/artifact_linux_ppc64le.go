@@ -5,10 +5,10 @@ package main
 //goland:noinspection GoSnakeCaseUsage
 const (
 	ArtifactCacheName          = "dprint-v" + Version + "-linux-ppc64le-musl"
-	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.59.0/dprint-powerpc64le-unknown-linux-musl.zip"
-	ArtifactSHA256Digest       = "718fdb164317347fcec31141926992f083167eb9f54a8df5d4dc77b5c5b46478"
+	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.60.1/dprint-powerpc64le-unknown-linux-musl.zip"
+	ArtifactSHA256Digest       = "d937d7107862d2cd8c3e0c4a094fa3e0fcebe4b534c1a590d4af016edeba463b"
 	ArtifactCacheName_glibc    = "dprint-v" + Version + "-linux-ppc64le-glibc"
-	ArtifactDownloadURL_glibc  = "https://github.com/dprint/dprint/releases/download/0.59.0/dprint-powerpc64le-unknown-linux-gnu.zip"
-	ArtifactSHA256Digest_glibc = "06a99164542e750085eacbf8a1f984a93defb2d1755ff1a7f12b0d4ab4c1b75c"
+	ArtifactDownloadURL_glibc  = "https://github.com/dprint/dprint/releases/download/0.60.1/dprint-powerpc64le-unknown-linux-gnu.zip"
+	ArtifactSHA256Digest_glibc = "c99f1599d78199ae51360cd79b16b80d640e81ddf9617de4f95bcbec744b6838"
 	ArtifactInArchiveFilePath  = "dprint"
 )
