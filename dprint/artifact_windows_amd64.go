@@ -5,8 +5,8 @@ package main
 //goland:noinspection GoSnakeCaseUsage
 const (
 	ArtifactCacheName          = "dprint-v" + Version + "-windows-amd64-msvc"
-	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.64.0/dprint-x86_64-pc-windows-msvc.zip"
-	ArtifactSHA256Digest       = "2d0be3f0aa8d3c55e4ae19de324353d2179dade2a05b0eda5bd80bc1b94579cc"
+	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.64.1/dprint-x86_64-pc-windows-msvc.zip"
+	ArtifactSHA256Digest       = "52f59def557bdab65744d2b0cd23585843b8158d2427f7a671c35bdd080b38d0"
 	ArtifactCacheName_glibc    = ""
 	ArtifactDownloadURL_glibc  = ""
 	ArtifactSHA256Digest_glibc = ""
