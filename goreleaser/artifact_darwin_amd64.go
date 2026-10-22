@@ -8,8 +8,8 @@ import (
 
 const (
 	ArtifactCacheName         = "goreleaser-v" + Version + "-darwin-amd64"
-	ArtifactDownloadURL       = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Darwin_x86_64.tar.gz"
-	ArtifactSHA256Digest      = "dbc39347d9ca25a2da9bcc03633f39130bb3a67c9f2a0da86ba15b8b00bf86ce"
+	ArtifactDownloadURL       = "https://github.com/goreleaser/goreleaser/releases/download/v2.19.0/goreleaser_Darwin_x86_64.tar.gz"
+	ArtifactSHA256Digest      = "164fce297e601ec00009e40d26858789b637335b5564bff2c99027b10d28bafe"
 	ArtifactArchiveFormat     = gotoolbox.TarGzipArchive
 	ArtifactInArchiveFilePath = "goreleaser"
 )

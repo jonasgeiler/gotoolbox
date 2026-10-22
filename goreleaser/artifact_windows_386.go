@@ -8,8 +8,8 @@ import (
 
 const (
 	ArtifactCacheName         = "goreleaser-v" + Version + "-windows-386"
-	ArtifactDownloadURL       = "https://github.com/goreleaser/goreleaser/releases/download/v2.18.3/goreleaser_Windows_i386.zip"
-	ArtifactSHA256Digest      = "2ec7663916150fe8b4775fa2fb0911c7e3fd0de80c8c28f0efa6abbbbb2a3ba2"
+	ArtifactDownloadURL       = "https://github.com/goreleaser/goreleaser/releases/download/v2.19.0/goreleaser_Windows_i386.zip"
+	ArtifactSHA256Digest      = "796e2d925fad9c79cea940265d2503dc8328401a125b8f4a8fffef0c1a0f4c75"
 	ArtifactArchiveFormat     = gotoolbox.ZipArchive
 	ArtifactInArchiveFilePath = "goreleaser.exe"
 )
