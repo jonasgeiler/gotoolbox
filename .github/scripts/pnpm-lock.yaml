@@ -36,7 +36,7 @@ packages:
     resolution: {integrity: sha512-+sCcHHbVdk93a0XT19ECtO/gIXoxvdsgQLzb2fE2/5sIZmWQuluYyjPQtrtTHdU1YzTZ7bAPN4sITq2xi1679w==}
 
   '@actions/github-script@https://codeload.github.com/actions/github-script/tar.gz/3a2844b7e9c422d3c10d287c895573f7108da1b3':
-    resolution: {gitHosted: true, integrity: sha512-8ycuXIPYjTQtJUUbjlRvrrdRRyGI06dMCDM/akxV3gEqGUOlhi9v9o4MrpwNFsdRJ1n6umPYJaseE5Wl0x7kkg==, tarball: https://codeload.github.com/actions/github-script/tar.gz/3a2844b7e9c422d3c10d287c895573f7108da1b3}
+    resolution: {gitHosted: true, tarball: https://codeload.github.com/actions/github-script/tar.gz/3a2844b7e9c422d3c10d287c895573f7108da1b3}
     version: 9.0.0
     engines: {node: '>=24'}
 
