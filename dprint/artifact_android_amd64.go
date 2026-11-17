@@ -5,8 +5,8 @@ package main
 //goland:noinspection GoSnakeCaseUsage
 const (
 	ArtifactCacheName          = "dprint-v" + Version + "-android-amd64"
-	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.64.3/dprint-x86_64-linux-android.zip"
-	ArtifactSHA256Digest       = "f741d595cd68c339b2ee1e6a5ca1448d1208315ba96a961704468f719b6388c8"
+	ArtifactDownloadURL        = "https://github.com/dprint/dprint/releases/download/0.65.0/dprint-x86_64-linux-android.zip"
+	ArtifactSHA256Digest       = "fc801196d0a437284d62047d586d74c53b42aa1f2fcd6e4139612eddff554564"
 	ArtifactCacheName_glibc    = ""
 	ArtifactDownloadURL_glibc  = ""
 	ArtifactSHA256Digest_glibc = ""
