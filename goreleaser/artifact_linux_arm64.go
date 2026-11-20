@@ -8,8 +8,8 @@ import (
 
 const (
 	ArtifactCacheName         = "goreleaser-v" + Version + "-linux-arm64"
-	ArtifactDownloadURL       = "https://github.com/goreleaser/goreleaser/releases/download/v2.20.2/goreleaser_Linux_arm64.tar.gz"
-	ArtifactSHA256Digest      = "f0fa989c3531348e8f975aac647eb187a09046f8a34c54e0b79bed66c84b7f96"
+	ArtifactDownloadURL       = "https://github.com/goreleaser/goreleaser/releases/download/v2.20.3/goreleaser_Linux_arm64.tar.gz"
+	ArtifactSHA256Digest      = "cfce0afc7bcc14447df211cc10c0012cfc395646070bcf23e840b16cbce6d204"
 	ArtifactArchiveFormat     = gotoolbox.TarGzipArchive
 	ArtifactInArchiveFilePath = "goreleaser"
 )
